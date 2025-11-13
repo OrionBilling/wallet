@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  yugabytedb:
+    image: yugabytedb/yugabyte:2.22.0.0-b16
+    container_name: yugabytedb
+    ports:
+      - "127.0.0.1:5433:5433"   # PostgreSQL API
+      - "127.0.0.1:9000:9000"   # YugaByte UI
+      - "127.0.0.1:7000:7000"   # Master API
+      - "127.0.0.1:9100:9100"   # Tablet server API
+    environment:
+      - YSQL_WAL_RETENTION_PERIOD_SECONDS=3600
+    volumes:
+      - yugabytedb_data:/home/yugabyte/yugabyte-data
+    command: [
+      "/home/yugabyte/bin/yugabyted", "start",
+      "--base_dir=/home/yugabyte/yugabyte-data",
+      "--daemon=false",
+      "--listen=0.0.0.0",
+      "--rpc_bind_addresses=0.0.0.0",
+      "--tserver_flags=enable_ysql=true,ysql_enable_pgaudit=false"
+    ]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5433 -U yugabyte"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.3.15
+    container_name: redpanda
+    ports:
+      - "127.0.0.1:9092:9092"   # Kafka API
+      - "127.0.0.1:9644:9644"   # Admin API
+      - "127.0.0.1:8081:8081"   # Schema Registry
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    command:
+      - redpanda
+      - start
+      - --node-id
+      - '0'
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://localhost:9092
+      - --smp
+      - '1'
+      - --memory
+      - 1G
+      - --reserve-memory
+      - 100M
+      - --overprovisioned
+      - --unsafe-bypass-fsync
+      - 'true'
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster info"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  valkey:
+    image: valkey/valkey:7.2.5-alpine
+    container_name: valkey
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["valkey-server", "--appendonly", "yes"]
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  yugabytedb_data:
+  valkey_data:
+  redpanda-data:

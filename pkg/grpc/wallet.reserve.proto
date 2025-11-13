@@ -1,0 +1,234 @@
+syntax = "proto3";
+
+package wallet.reservation.v1;
+
+option go_package = "generated/pb";
+
+// ToDo: maybe it's worth to add batch reservations and confirms
+
+service WalletReservationService {
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse);
+  
+  rpc CreateReservation(CreateReservationRequest) returns (CreateReservationResponse);
+  
+  rpc ConfirmReservation(ConfirmReservationRequest) returns (ConfirmReservationResponse);
+  
+  rpc PartialConfirmReservation(PartialConfirmReservationRequest) returns (PartialConfirmReservationResponse);
+
+  rpc CancelReservation(CancelReservationRequest) returns (CancelReservationResponse);
+    
+  rpc ExtendReservation(ExtendReservationRequest) returns (ExtendReservationResponse);
+  
+  rpc GetReservation(GetReservationRequest) returns (GetReservationResponse);
+
+  rpc ListReservations(ListReservationsRequest) returns (ListReservationsResponse);
+}
+
+message BalanceInfo {
+  // The actual total balance in the wallet (In minimal currency units)
+  int64 actual_balance = 1;
+  
+  // Total amount currently reserved across all reservations  (In minimal currency units)
+  uint64 reserved_total = 2;
+  
+  // Currency code (ISO 4217)
+  string currency = 4;
+  
+  // Last update UNIX timestamp
+  int64 last_updated = 5;
+}
+
+message Reservation {
+  // Unique identifier for the reservation
+  string reservation_id = 1;
+  
+  // User(UUIDv4) who owns the wallet
+  string  user_id = 2;
+  
+  // Service creating the reservation
+  string service_id = 3;
+  
+  // Amount being reserved
+  uint64 amount = 4;
+  
+  // Context or description of what this reservation is for
+  string context = 5;
+  
+  // Current status of the reservation
+  ReservationStatus status = 6;
+  
+  // When the reservation was created
+  int64 created_at = 7;
+  
+  // When the reservation expires and will be auto-released
+  int64 expires_at = 8;
+  
+  // Optional reference ID from the calling service
+  string reference_id = 9;
+}
+
+// Possible reservation statuses
+enum ReservationStatus {
+  RESERVATION_STATUS_UNSPECIFIED = 0;
+  RESERVATION_STATUS_ACTIVE = 1;      // Funds are currently reserved
+  RESERVATION_STATUS_CONFIRMED = 2;   // Reservation was converted to actual charge
+  RESERVATION_STATUS_RELEASED = 3;    // Reservation was cancelled/released
+  RESERVATION_STATUS_EXPIRED = 4;     // Reservation expired automatically
+  RESERVATION_STATUS_PARTIAL = 5;     // Partially confirmed
+}
+
+// Error details for reservation failures
+message ReservationError {
+  ErrorCode code = 1;
+  string message = 2;
+  map<string, string> metadata = 3; // Additional error context
+  
+  enum ErrorCode {
+    ERROR_CODE_UNSPECIFIED = 0;
+    ERROR_CODE_INSUFFICIENT_FUNDS = 1;
+    ERROR_CODE_RESERVATION_NOT_FOUND = 2;
+    ERROR_CODE_RESERVATION_EXPIRED = 3;
+    ERROR_CODE_INVALID_AMOUNT = 4;
+    ERROR_CODE_DUPLICATE_RESERVATION = 5;
+    ERROR_CODE_USER_NOT_FOUND = 6;
+    ERROR_CODE_SERVICE_QUOTA_EXCEEDED = 7;
+  }
+}
+
+// Requests and Responses
+
+message GetBalanceRequest {
+  string user_id = 1;
+}
+
+message GetBalanceResponse {
+  BalanceInfo balance = 1;
+}
+
+message CreateReservationRequest {
+  string user_id = 1;
+  string service_id = 2;
+  uint64 amount = 3; // In minimal currency units
+  uint32 timeout_seconds = 4; // TTL for reservation in seconds (default: 3600)
+}
+
+message CreateReservationResponse {
+  oneof result {
+    ReservationSuccess success = 1;
+    ReservationError error = 2;
+  }
+}
+
+message ReservationSuccess {
+  string reservation_id = 1;
+  BalanceInfo updated_balance = 2;
+  int64 expires_at = 3;
+}
+
+message ConfirmReservationRequest {
+  string reservation_id = 1;
+  string user_id = 2;
+  string service_id = 3;
+}
+
+message ConfirmReservationResponse {
+  oneof result {
+    ConfirmationSuccess success = 1;
+    ReservationError error = 2;
+  }
+}
+
+message ConfirmationSuccess {
+  string reservation_id = 1;
+  uint64 confirmed_amount = 2; // In minimal currency units
+  BalanceInfo updated_balance = 3;
+  int64 confirmed_at = 4;
+}
+
+message CancelReservationRequest {
+  string reservation_id = 1;
+  string user_id = 2;
+  string service_id = 3; // Service must match original reservation
+  string reason = 4; // Reason for cancellation
+}
+
+message CancelReservationResponse {
+  oneof result {
+    CancellationSuccess success = 1;
+    ReservationError error = 2;
+  }
+}
+
+message CancellationSuccess {
+  string reservation_id = 1;
+  uint64 released_amount = 2; // In minimal currency units
+  BalanceInfo updated_balance = 3;
+  int64 cancelled_at = 4;
+}
+
+message PartialConfirmReservationRequest {
+  string reservation_id = 1;
+  string user_id = 2;
+  string service_id = 3;
+  uint64 confirm_amount = 4; // In minimal currency units. Amount to actually charge (must be <= reserved)
+  uint32 additional_seconds = 5; // How many seconds to extend (ignored for 'is_final_confirm' == true)
+  bool is_final_confirm = 6; // "true" for closing reservation and returning the rest into wallet
+}
+
+message PartialConfirmReservationResponse {
+  oneof result {
+    PartialConfirmationSuccess success = 1;
+    ReservationError error = 2;
+  }
+}
+
+message PartialConfirmationSuccess {
+  string reservation_id = 1;
+  uint64 confirmed_amount = 2; // In minimal currency units.
+  uint64 released_amount = 3; // In minimal currency units. Reserve remaining amount that was released
+  BalanceInfo updated_balance = 4;
+  int64 expires_at = 5; 
+}
+
+message ExtendReservationRequest {
+  string reservation_id = 1;
+  string user_id = 2;
+  string service_id = 3;
+  uint32 additional_seconds = 4; // How many seconds to extend
+}
+
+message ExtendReservationResponse {
+  oneof result {
+    ExtensionSuccess success = 1;
+    ReservationError error = 2;
+  }
+}
+
+message ExtensionSuccess {
+  string reservation_id = 1;
+  int64 new_expires_at = 2;
+}
+
+message GetReservationRequest {
+  string reservation_id = 1;
+  string user_id = 2; // Optional user ID for validation
+}
+
+message GetReservationResponse {
+  Reservation reservation = 1;
+}
+
+message ListReservationsRequest {
+  string user_id = 1;
+  ReservationStatus status = 2; // Filter by status, empty for all
+  string service_id = 3; // Filter by service, empty for all
+  int64 created_after = 4; // Filter by creation time, 0 for all
+  int32 page_size = 5;
+  string page_token = 6;
+}
+
+message ListReservationsResponse {
+  repeated Reservation reservations = 1;
+  string next_page_token = 2;
+  uint32 total_count = 3;
+}
