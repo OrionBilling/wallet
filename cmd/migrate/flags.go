@@ -4,33 +4,33 @@ import "github.com/urfave/cli/v3"
 
 var cmdFlags = []cli.Flag{
 	&cli.StringFlag{
-		Name:    "postgres-user",
-		Usage:   "postgres user",
-		Sources: cli.EnvVars("POSTGRES_USER"),
+		Name:    "yugabytedb-user",
+		Usage:   "yugabytedb user",
+		Sources: cli.EnvVars("YUGABYTEDB_USER"),
 		Value:   "admin",
 	},
 	&cli.StringFlag{
-		Name:    "postgres-password",
-		Usage:   "postgres password",
-		Sources: cli.EnvVars("POSTGRES_PASSWORD"),
+		Name:    "yugabytedb-password",
+		Usage:   "yugabytedb password",
+		Sources: cli.EnvVars("YUGABYTEDB_PASSWORD"),
 		Value:   "admin",
 	},
 	&cli.StringFlag{
-		Name:    "postgres-host",
-		Usage:   "postgres host",
-		Sources: cli.EnvVars("POSTGRES_HOST"),
+		Name:    "yugabytedb-host",
+		Usage:   "yugabytedb host",
+		Sources: cli.EnvVars("YUGABYTEDB_HOST"),
 		Value:   "localhost:5432",
 	},
 	&cli.StringFlag{
-		Name:    "postgres-db-name",
-		Usage:   "postgres database name",
-		Sources: cli.EnvVars("POSTGRES_DB_NAME"),
+		Name:    "yugabytedb-db-name",
+		Usage:   "yugabytedb database name",
+		Sources: cli.EnvVars("YUGABYTEDB_DB_NAME"),
 		Value:   "sn",
 	},
 	&cli.BoolFlag{
-		Name:    "postgres-disable-tls",
-		Usage:   "postgres disable tls",
-		Sources: cli.EnvVars("POSTGRES_DISABLE_TLS"),
+		Name:    "yugabytedb-disable-tls",
+		Usage:   "yugabytedb disable tls",
+		Sources: cli.EnvVars("YUGABYTEDB_DISABLE_TLS"),
 		Value:   true,
 	},
 }

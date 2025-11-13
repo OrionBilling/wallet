@@ -1,33 +1,29 @@
 USE billing_system;
 
--- Users Table (Partitioned by user_id range)
-CREATE TABLE IF NOT EXISTS users (
-    user_id BIGINT UNSIGNED NOT NULL,
+-- Accounts Table (Partitioned by account_id range)
+CREATE TABLE IF NOT EXISTS account (
+    account_id UUID NOT NULL,
+    group_id UUID,
+    parent_group_id UUID, -- for group/company hierarchy
+    account_type ENUM ('user', 'company', 'group') NOT NULL ,
     username VARCHAR(50) NOT NULL,
     email VARCHAR(255) NOT NULL,
     country_code SMALLINT UNSIGNED,  -- ISO 3166-1 number(3 digits)
-    status ENUM('active', 'inactive', 'suspended', 'blocked', 'deleted'),
-    current_plan_id INT UNSIGNED,
-    plan_start_date DATE,
-    plan_end_date DATE,
-    auto_renew BOOLEAN DEFAULT TRUE,
+    account_status ENUM('active', 'inactive', 'suspended', 'blocked', 'deleted'),
     timezone VARCHAR(50) DEFAULT 'UTC',
-    metadata JSON,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (user_id),
+    PRIMARY KEY (account_id, company_id)
 
-    UNIQUE KEY uk_email (email),
+    UNIQUE KEY uk_email (account_status),
     UNIQUE KEY uk_username (username),
 
-    INDEX idx_user_status (status),
-    INDEX idx_user_plan (current_plan_id),
-    INDEX idx_plan_dates (plan_start_date, plan_end_date),
+    INDEX idx_user_status (account_status),
     INDEX idx_created_at (created_at)
-) ENGINE=InnoDB
+)
 
-PARTITION BY RANGE (user_id) (
+PARTITION BY RANGE (account_id) (
     PARTITION p0 VALUES LESS THAN (1000000000),
     PARTITION p1 VALUES LESS THAN (2000000000),
     PARTITION p2 VALUES LESS THAN (3000000000),
