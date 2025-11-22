@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wallet.reservation.v1;
 
-option go_package = "generated/pb";
+option go_package = "wallet/pkg/grpc/reserve";
 
 // ToDo: maybe it's worth to add batch reservations and confirms
 

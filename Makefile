@@ -45,9 +45,10 @@ wire:
 	go run -v -mod=mod github.com/google/wire/cmd/wire ./api/inject
 
 proto:
-	protoc --go_out=. --go_opt=paths=source_relative \
-       --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-       pkg/grpc/wallet.reserve.proto
+	protoc --proto_path=./pkg/grpc/reserve \
+	   --go_out=pkg/grpc/reserve/generated --go_opt=paths=source_relative \
+       --go-grpc_out=pkg/grpc/reserve/generated --go-grpc_opt=paths=source_relative \
+       pkg/grpc/reserve/wallet.reserve.proto
 
 run:
 	go run cmd/main.go api

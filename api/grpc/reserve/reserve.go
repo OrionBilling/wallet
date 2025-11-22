@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"wallet/internal/core"
-	pb "wallet/pkg/grpc"
+	pb "wallet/pkg/grpc/reserve/generated"
 )
 
 type service struct {

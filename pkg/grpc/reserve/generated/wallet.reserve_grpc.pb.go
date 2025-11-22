@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.28.2
-// source: pkg/grpc/wallet.reserve.proto
+// source: wallet.reserve.proto
 
-package pb
+package reserve
 
 import (
 	context "context"
@@ -384,5 +384,5 @@ var WalletReservationService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "pkg/grpc/wallet.reserve.proto",
+	Metadata: "wallet.reserve.proto",
 }

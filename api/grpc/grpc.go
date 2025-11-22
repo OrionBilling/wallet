@@ -9,7 +9,7 @@ import (
 
 	"wallet/api/grpc/reserve"
 	"wallet/internal/core"
-	pb "wallet/pkg/grpc"
+	pb "wallet/pkg/grpc/reserve/generated"
 	"wallet/pkg/logger"
 )
 
